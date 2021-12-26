@@ -1,11 +1,8 @@
 package main
 
-import "fmt"
-
-func solveMatrix(m *Matrix, elements []int, currentElement int) bool {
+func solveMatrix(m *Matrix, elements []int, currentElement int, solutionChan chan *Matrix) bool {
 	if len(elements) == 0 {
-		fmt.Println("Found solution!")
-		m.Display()
+		solutionChan <- m
 		return true
 	} else {
 		//m.Display()
@@ -17,7 +14,7 @@ func solveMatrix(m *Matrix, elements []int, currentElement int) bool {
 				for j := 0; j < m.Cols-e.Cols+1; j++ {
 					if m.Fits(j, i, e) {
 						newM := m.Fit(j, i, e)
-						solveMatrix(newM, elements[1:], currentElement+1)
+						go solveMatrix(newM, elements[1:], currentElement+1, solutionChan)
 					}
 				}
 
@@ -60,7 +57,9 @@ func addIfNotEqual(r []*Matrix, m *Matrix) []*Matrix {
 	return r
 }
 
-func SolvePuzzle(cols int, rows int, elements []int) {
+func SolvePuzzle(cols int, rows int, elements []int) chan *Matrix {
+	solutionChan := make(chan *Matrix, 2)
 	m0 := NewMatrix(cols, rows)
-	solveMatrix(m0, elements, 1)
+	go solveMatrix(m0, elements, 1, solutionChan)
+	return solutionChan
 }
