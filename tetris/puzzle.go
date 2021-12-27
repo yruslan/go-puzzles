@@ -1,6 +1,14 @@
 package main
 
-func solveMatrix(m *Matrix, elements []int, currentElement int, solutionChan chan *Matrix) bool {
+import "sync"
+
+func solveMatrix(m *Matrix, elements []int, currentElement int, solutionChan chan *Matrix, wg *sync.WaitGroup) bool {
+	defer func() {
+		if wg != nil {
+			wg.Done()
+		}
+	}()
+
 	if len(elements) == 0 {
 		solutionChan <- m
 		return true
@@ -14,7 +22,12 @@ func solveMatrix(m *Matrix, elements []int, currentElement int, solutionChan cha
 				for j := 0; j < m.Cols-e.Cols+1; j++ {
 					if m.Fits(j, i, e) {
 						newM := m.Fit(j, i, e)
-						go solveMatrix(newM, elements[1:], currentElement+1, solutionChan)
+						if currentElement < 4 {
+							wg.Add(1)
+							go solveMatrix(newM, elements[1:], currentElement+1, solutionChan, wg)
+						} else {
+							solveMatrix(newM, elements[1:], currentElement+1, solutionChan, nil)
+						}
 					}
 				}
 
@@ -58,8 +71,14 @@ func addIfNotEqual(r []*Matrix, m *Matrix) []*Matrix {
 }
 
 func SolvePuzzle(cols int, rows int, elements []int) chan *Matrix {
+	var wg sync.WaitGroup
 	solutionChan := make(chan *Matrix, 2)
 	m0 := NewMatrix(cols, rows)
-	go solveMatrix(m0, elements, 1, solutionChan)
+	wg.Add(1)
+	go solveMatrix(m0, elements, 1, solutionChan, &wg)
+	go func() {
+		wg.Wait()
+		close(solutionChan)
+	}()
 	return solutionChan
 }
