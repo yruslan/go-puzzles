@@ -1,6 +1,8 @@
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
 func solveMatrix(m *Matrix, elements []int, currentElement int, solutionChan chan *Matrix, wg *sync.WaitGroup) bool {
 	defer func() {
@@ -81,4 +83,33 @@ func SolvePuzzle(cols int, rows int, elements []int) chan *Matrix {
 		close(solutionChan)
 	}()
 	return solutionChan
+}
+
+func contains(m *Matrix, arr []*Matrix) bool {
+	for _, v := range arr {
+		if m.Equals(v) {
+			return true
+		}
+	}
+	return false
+}
+
+func Unify(ch chan *Matrix) chan *Matrix {
+	outputChan := make(chan *Matrix, 2)
+
+	alreadyProcessed := make([]*Matrix, 0, 1000)
+
+	go func() {
+		for matrix := range ch {
+			regularized := matrix.Regularize()
+
+			if !contains(regularized, alreadyProcessed) {
+				alreadyProcessed = append(alreadyProcessed, regularized)
+				outputChan <- regularized
+			}
+		}
+		close(outputChan)
+	}()
+
+	return outputChan
 }

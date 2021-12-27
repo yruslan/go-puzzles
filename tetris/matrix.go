@@ -145,3 +145,26 @@ func (p *Matrix) Display2() {
 	}
 	fmt.Println("")
 }
+
+func (p *Matrix) Regularize() *Matrix {
+	m := p.Copy()
+	numMap := make(map[int]int)
+
+	curNum := 1
+	for i := 0; i < p.Rows; i++ {
+		for j := 0; j < p.Cols; j++ {
+			a := p.Get(j, i)
+			b, prs := numMap[a]
+
+			if prs {
+				m.Set(j, i, b)
+			} else {
+				m.Set(j, i, curNum)
+				numMap[a] = curNum
+				curNum++
+			}
+		}
+	}
+
+	return m
+}
